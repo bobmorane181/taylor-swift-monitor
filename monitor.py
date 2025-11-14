@@ -8,6 +8,7 @@ import requests
 import json
 import time
 import hashlib
+import os
 from datetime import datetime
 from bs4 import BeautifulSoup
 import logging
@@ -28,15 +29,31 @@ logger = logging.getLogger(__name__)
 class TaylorSwiftMonitor:
     def __init__(self, config_path='config.json'):
         """Initialise le moniteur avec la configuration"""
-        with open(config_path, 'r') as f:
-            self.config = json.load(f)
-        
-        self.url = self.config['url']
-        self.webhook_url = self.config['discord_webhook_url']
-        self.check_interval = self.config['check_interval_seconds']
+        # Supporte à la fois config.json (local) et variables d'environnement (production)
+        if os.path.exists(config_path):
+            # Mode local : utilise config.json
+            with open(config_path, 'r') as f:
+                self.config = json.load(f)
+            self.url = self.config.get('url', 'https://storeca.taylorswift.com/collections/the-holiday-collection')
+            self.webhook_url = self.config.get('discord_webhook_url', os.getenv('DISCORD_WEBHOOK_URL'))
+            self.check_interval = self.config.get('check_interval_seconds', int(os.getenv('CHECK_INTERVAL', 30)))
+        else:
+            # Mode production (Railway/cloud) : utilise les variables d'environnement
+            self.url = os.getenv('STORE_URL', 'https://storeca.taylorswift.com/collections/the-holiday-collection')
+            self.webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
+            self.check_interval = int(os.getenv('CHECK_INTERVAL', 30))
+            self.config = {
+                'url': self.url,
+                'discord_webhook_url': self.webhook_url,
+                'check_interval_seconds': self.check_interval
+            }
+
+        if not self.webhook_url:
+            raise ValueError("Discord webhook URL est requis (config.json ou variable DISCORD_WEBHOOK_URL)")
+
         self.known_products = set()
         self.first_run = True
-        
+
         logger.info("Moniteur initialisé")
         logger.info(f"URL surveillée: {self.url}")
         logger.info(f"Intervalle de vérification: {self.check_interval} secondes")
