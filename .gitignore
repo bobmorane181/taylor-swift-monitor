@@ -1,0 +1,30 @@
+notepad .gitignore
+```
+
+Quand Notepad s'ouvre, colle ce contenu:
+```
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Fichiers sensibles - NE PAS COMMITER
+config.json
+state.json
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
